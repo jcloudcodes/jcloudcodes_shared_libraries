@@ -18,7 +18,7 @@ def call() {
         }
 
         parameters {
-            choice(name: 'DEPLOY_ENV', choices: ['lab1', 'qa', 'prod'], description: 'Target environment')
+            choice(name: 'DEPLOY_ENV', choices: ['lab2', 'qa', 'prod'], description: 'Target environment')
             booleanParam(name: 'PUSH_ARTIFACT', defaultValue: true, description: 'Upload build artifact to Nexus')
             booleanParam(name: 'PUSH_DOCKER', defaultValue: true, description: 'Build and push Docker image')
             booleanParam(name: 'GITOPS_DEPLOY', defaultValue: true, description: 'Trigger GitOps deploy')
@@ -26,19 +26,25 @@ def call() {
         }
 
         stages {
+            stage('Checkout') {
+                agent { label 'jslave-inbound' }
+                steps {
+                    commonCheckout()
+                }
+            }
+
             stage('Load Config') {
                 agent { label 'jslave-inbound' }
                 steps {
                     script {
-                        cfg = loadProjectConfig()
+                        cfg = loadProjectConfig('ci/project.yaml')
                     }
                 }
             }
 
-            stage('Checkout') {
+            stage('Init') {
                 agent { label "${cfg.agentLabel ?: 'jslave-inbound'}" }
                 steps {
-                    commonCheckout()
                     script {
                         commonInit(cfg)
                     }
