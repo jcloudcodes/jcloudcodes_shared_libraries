@@ -11,11 +11,19 @@ def call(Map cfg) {
 
           ls -lh dist
         """
-    } else if (cfg.projectType in ['java-maven', 'java-gradle']) {
+    } else if (cfg.projectType == 'java-maven') {
         sh """
           set -euxo pipefail
-          ls -lh target || true
-          ls -lh build/libs || true
+          ls -lh target
+          ls -lh target/*.war || true
+          ls -lh target/*.jar || true
+        """
+    } else if (cfg.projectType == 'java-gradle') {
+        sh """
+          set -euxo pipefail
+          ls -lh build/libs
+          ls -lh build/libs/*.jar || true
+          ls -lh build/libs/*.war || true
         """
     } else {
         error("Unsupported projectType for packaging: ${cfg.projectType}")
