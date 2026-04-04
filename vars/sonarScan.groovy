@@ -3,15 +3,21 @@ def call(Map cfg) {
         if (cfg.projectType == 'java-maven') {
             sh """
               set -euxo pipefail
-              ls -la target || true
-              ls -la target/classes || true
 
-              ${tool 'jcloudcodes-sonarqube-scanner'}/bin/sonar-scanner \
+              SCANNER="${tool 'jcloudcodes-sonarqube-scanner'}/bin/sonar-scanner"
+
+              ARGS="\
                 -Dsonar.projectKey=${cfg.sonarProjectKey} \
                 -Dsonar.projectName=${cfg.sonarProjectName} \
                 -Dsonar.sources=src/main/java \
-                -Dsonar.tests=src/test/java \
-                -Dsonar.java.binaries=target/classes
+                -Dsonar.java.binaries=target/classes"
+
+              if [ -d src/test/java ]; then
+                ARGS="$ARGS -Dsonar.tests=src/test/java"
+              fi
+
+              echo "Running: \$SCANNER \$ARGS"
+              \$SCANNER \$ARGS
             """
         } else if (cfg.projectType == 'django') {
             sh """
