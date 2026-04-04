@@ -2,7 +2,7 @@ def call() {
     def cfg = [:]
 
     pipeline {
-        agent none
+        agent { label 'jslave-inbound' }
 
         options {
             timestamps()
