@@ -44,3 +44,4 @@ Start with these vars/ files first,Build these first, in this order:
       │   └── project.yaml   ✅ HERE
       ├── pom.xml
 2. commonCheckout.groovy:
+3. commonInit.groovy
