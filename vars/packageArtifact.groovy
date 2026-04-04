@@ -16,7 +16,6 @@ def call(Map cfg) {
           set -euxo pipefail
           ls -lh target
           ls -lh target/*.war || true
-          ls -lh target/*.jar || true
         """
     } else if (cfg.projectType == 'java-gradle') {
         sh """
