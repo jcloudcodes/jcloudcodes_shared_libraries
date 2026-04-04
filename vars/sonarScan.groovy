@@ -1,28 +1,23 @@
 def call(Map cfg) {
     withSonarQubeEnv(cfg.sonarServer ?: 'jcloudcodes-sonarqube') {
+        def scannerHome = tool 'jcloudcodes-sonarqube-scanner'
+
         if (cfg.projectType == 'java-maven') {
             sh """
               set -euxo pipefail
+              ls -la target
+              ls -la target/classes
 
-              SCANNER="${tool 'jcloudcodes-sonarqube-scanner'}/bin/sonar-scanner"
-
-              ARGS="\
+              ${scannerHome}/bin/sonar-scanner \
                 -Dsonar.projectKey=${cfg.sonarProjectKey} \
                 -Dsonar.projectName=${cfg.sonarProjectName} \
                 -Dsonar.sources=src/main/java \
-                -Dsonar.java.binaries=target/classes"
-
-              if [ -d src/test/java ]; then
-                ARGS="$ARGS -Dsonar.tests=src/test/java"
-              fi
-
-              echo "Running: \$SCANNER \$ARGS"
-              \$SCANNER \$ARGS
+                -Dsonar.java.binaries=target/classes
             """
         } else if (cfg.projectType == 'django') {
             sh """
               set -euxo pipefail
-              ${tool 'jcloudcodes-sonarqube-scanner'}/bin/sonar-scanner \
+              ${scannerHome}/bin/sonar-scanner \
                 -Dsonar.projectKey=${cfg.sonarProjectKey} \
                 -Dsonar.projectName=${cfg.sonarProjectName} \
                 -Dsonar.sources=. \
