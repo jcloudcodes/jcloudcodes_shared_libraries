@@ -11,7 +11,7 @@ def call(Map cfg) {
       docker build -t ${localImage} -f ${cfg.dockerfile ?: 'Dockerfile'} .
     """
 
-    dockerBuildPush(
+    dockerBuild(
         build: false,
         sourceImage: localImage,
         registry: "http://${cfg.dockerRegistry}",

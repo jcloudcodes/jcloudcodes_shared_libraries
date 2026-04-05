@@ -73,15 +73,15 @@ def call() {
                 }
             }
 
-            stage('Package Artifact') {
+            stage('create docker image') {
                 steps {
                     script {
-                        packageArtifact(cfg)
+                        dockerBuild(cfg)
                     }
                 }
             }
 
-            stage('Upload Artifact to Nexus') {
+          /*  stage('Upload Artifact to Nexus') {
                 when { expression { return params.PUSH_ARTIFACT } }
                 steps {
                     script {
@@ -106,7 +106,8 @@ def call() {
                         jfrogUploadStage(cfg)
                     }
                 }
-            }
+            }*/
+
         }
 
         post {
