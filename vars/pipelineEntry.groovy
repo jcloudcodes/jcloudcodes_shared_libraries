@@ -73,7 +73,16 @@ def call() {
                 }
             }
 
-            stage('create docker image') {
+            stage('Package Artifact') {
+                steps {
+                    script {
+                        packageArtifact(cfg)
+                    }
+                }
+            }
+
+            stage('Create Docker Image') {
+                when { expression { return params.PUSH_DOCKER } }
                 steps {
                     script {
                         dockerBuild(cfg)
