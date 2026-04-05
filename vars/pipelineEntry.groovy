@@ -21,20 +21,19 @@ def call() {
             choice(name: 'DEPLOY_ENV', choices: ['lab2', 'qa', 'prod'], description: 'Target environment')
             booleanParam(name: 'PUSH_ARTIFACT', defaultValue: true, description: 'Upload build artifact to Nexus')
             booleanParam(name: 'PUSH_DOCKER', defaultValue: true, description: 'Build and push Docker image')
+            booleanParam(name: 'PUSH_JFROG', defaultValue: false, description: 'Upload artifact/image to JFrog')
             booleanParam(name: 'GITOPS_DEPLOY', defaultValue: true, description: 'Trigger GitOps deploy')
             booleanParam(name: 'ARGO_WAIT', defaultValue: true, description: 'Wait for ArgoCD sync/health')
         }
 
         stages {
             stage('Checkout') {
-                agent { label 'jslave-inbound' }
                 steps {
                     commonCheckout()
                 }
             }
 
             stage('Load Config') {
-                agent { label 'jslave-inbound' }
                 steps {
                     script {
                         cfg = loadProjectConfig('ci/project.yaml')
@@ -43,7 +42,6 @@ def call() {
             }
 
             stage('Init') {
-                agent { label "${cfg.agentLabel ?: 'jslave-inbound'}" }
                 steps {
                     script {
                         commonInit(cfg)
@@ -52,7 +50,6 @@ def call() {
             }
 
             stage('Build + Test') {
-                agent { label "${cfg.agentLabel ?: 'jslave-inbound'}" }
                 steps {
                     script {
                         if (cfg.projectType == 'django') {
@@ -69,7 +66,6 @@ def call() {
             }
 
             stage('SonarQube Scan') {
-                agent { label "${cfg.agentLabel ?: 'jslave-inbound'}" }
                 steps {
                     script {
                         sonarScan(cfg)
@@ -78,10 +74,36 @@ def call() {
             }
 
             stage('Package Artifact') {
-                agent { label "${cfg.agentLabel ?: 'jslave-inbound'}" }
                 steps {
                     script {
                         packageArtifact(cfg)
+                    }
+                }
+            }
+
+            stage('Upload Artifact to Nexus') {
+                when { expression { return params.PUSH_ARTIFACT } }
+                steps {
+                    script {
+                        nexusUploadStage(cfg)
+                    }
+                }
+            }
+
+            stage('Push Docker to Nexus Registry') {
+                when { expression { return params.PUSH_DOCKER } }
+                steps {
+                    script {
+                        dockerPipeline(cfg)
+                    }
+                }
+            }
+
+            stage('Upload to JFrog') {
+                when { expression { return params.PUSH_JFROG } }
+                steps {
+                    script {
+                        jfrogUploadStage(cfg)
                     }
                 }
             }
