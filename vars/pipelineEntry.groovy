@@ -92,7 +92,7 @@ def call() {
 
             stage('Publish Artifacts and Images') {
                 parallel {
-                    stage('Push Docker Image to Nexus') {
+                    stage('Nexus Docker Images') {
                         when { expression { return params.PUSH_DOCKER } }
                         steps {
                             script {
@@ -101,7 +101,7 @@ def call() {
                         }
                     }
 
-                    stage('Push Docker Image to Docker Hub') {
+                    stage('DockerHub Image Push') {
                         when { expression { return params.PUSH_DOCKER } }
                         steps {
                             script {
@@ -110,7 +110,7 @@ def call() {
                         }
                     }
 
-                    stage('Upload Artifact to Nexus') {
+                    stage('Nexus Artifact Upload') {
                         when { expression { return params.PUSH_ARTIFACT } }
                         steps {
                             script {
