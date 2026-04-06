@@ -89,7 +89,7 @@ def call() {
                     }
                 }
             }
-            
+
             stage('Push Docker Image to Nexus') {
               steps {
                   script {
@@ -105,6 +105,15 @@ def call() {
                   }
               }
           }
+
+          stage('Upload Artifact to Nexus') {
+                when { expression { return params.PUSH_ARTIFACT } }
+                steps {
+                    script {
+                        nexusUploadStage(cfg)
+                    }
+                }
+            }
 
           /*  stage('Upload Artifact to Nexus') {
                 when { expression { return params.PUSH_ARTIFACT } }
