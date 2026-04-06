@@ -90,63 +90,62 @@ def call() {
                 }
             }
 
-            stage('Push Docker Image to Nexus') {
-              steps {
-                  script {
-                      dockerPush(cfg)
-                  }
-              }
-          }
+            stage('Publish Artifacts and Images') {
+                parallel {
+                    stage('Push Docker Image to Nexus') {
+                        when { expression { return params.PUSH_DOCKER } }
+                        steps {
+                            script {
+                                dockerPush(cfg)
+                            }
+                        }
+                    }
 
-          stage('Push Docker Image to Docker Hub') {
-              steps {
-                  script {
-                      dockerHubPush(cfg)
-                  }
-              }
-          }
+                    stage('Push Docker Image to Docker Hub') {
+                        when { expression { return params.PUSH_DOCKER } }
+                        steps {
+                            script {
+                                dockerHubPush(cfg)
+                            }
+                        }
+                    }
 
-          stage('Upload Artifact to Nexus') {
-                when { expression { return params.PUSH_ARTIFACT } }
-                steps {
-                    script {
-                        nexusUploadStage(cfg)
+                    stage('Upload Artifact to Nexus') {
+                        when { expression { return params.PUSH_ARTIFACT } }
+                        steps {
+                            script {
+                                nexusUploadStage(cfg)
+                            }
+                        }
                     }
                 }
             }
-
-          /*  stage('Upload Artifact to Nexus') {
-                when { expression { return params.PUSH_ARTIFACT } }
-                steps {
-                    script {
-                        nexusUploadStage(cfg)
-                    }
-                }
-            }
-
-            stage('Push Docker to Nexus Registry') {
-                when { expression { return params.PUSH_DOCKER } }
-                steps {
-                    script {
-                        dockerPipeline(cfg)
-                    }
-                }
-            }
-
-            stage('Upload to JFrog') {
-                when { expression { return params.PUSH_JFROG } }
-                steps {
-                    script {
-                        jfrogUploadStage(cfg)
-                    }
-                }
-            }*/
-
         }
 
         post {
             always {
                 script {
+                    sh """
+                      set +e
+                      echo "Docker cleanup on Jenkins agent"
+
+                      echo "Remove local image built by this job if present"
+                      docker rmi -f "${env.LOCAL_IMAGE ?: ''}" 2>/dev/null || true
+
+                      echo "Remove app-related images if present"
+                      docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | \
+                        awk '/${cfg.imageName ?: ""}/ {print \$2}' | sort -u | \
+                        xargs -r docker rmi -f || true
+
+                      echo "Prune dangling images"
+                      docker image prune -f || true
+
+                      echo "Prune builder cache"
+                      docker builder prune -af || true
+
+                      true
+                    """
+
                     if (cfg) {
                         commonPost(cfg)
                     }
