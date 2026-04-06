@@ -1,27 +1,52 @@
 def call(Map cfg) {
-    if (!env.PACKAGED_ARTIFACT?.trim()) {
-        error("PACKAGED_ARTIFACT is empty. Run packageArtifact first.")
+    if (cfg.projectType == 'django') {
+        env.PACKAGED_ARTIFACT = "dist/${env.ARTIFACT_NAME}"
+
+        sh """
+          set -euxo pipefail
+          rm -rf dist
+          mkdir -p dist
+
+          zip -r "${env.PACKAGED_ARTIFACT}" . \
+            -x ".git/*" ".venv/*" "venv/*" "__pycache__/*" "*.pyc" \
+               "staticfiles/*" "media/*" "*.log" ".DS_Store" ".idea/*" ".vscode/*"
+
+          ls -lh dist
+        """
+
+    } else if (cfg.projectType == 'java-maven') {
+        env.PACKAGED_ARTIFACT = sh(
+            script: "ls -1 target/*.war 2>/dev/null | head -1 || ls -1 target/*.jar 2>/dev/null | head -1",
+            returnStdout: true
+        ).trim()
+
+        if (!env.PACKAGED_ARTIFACT) {
+            error("No Maven artifact found in target/")
+        }
+
+        sh """
+          set -euxo pipefail
+          ls -lh "${env.PACKAGED_ARTIFACT}"
+        """
+
+    } else if (cfg.projectType == 'java-gradle') {
+        env.PACKAGED_ARTIFACT = sh(
+            script: "ls -1 build/libs/*.jar 2>/dev/null | head -1 || ls -1 build/libs/*.war 2>/dev/null | head -1",
+            returnStdout: true
+        ).trim()
+
+        if (!env.PACKAGED_ARTIFACT) {
+            error("No Gradle artifact found in build/libs/")
+        }
+
+        sh """
+          set -euxo pipefail
+          ls -lh "${env.PACKAGED_ARTIFACT}"
+        """
+
+    } else {
+        error("Unsupported projectType for packaging: ${cfg.projectType}")
     }
 
-    def artifactFile = env.PACKAGED_ARTIFACT
-    def artifactName = artifactFile.tokenize('/').last()
-    def artifactType = artifactName.tokenize('.').last()
-
-    echo "Uploading artifact to Nexus: ${artifactFile}"
-
-    nexusArtifactUploader(
-        nexusVersion: 'nexus3',
-        protocol: 'http',
-        nexusUrl: cfg.nexusUrl.replaceFirst('^https?://', ''),
-        repository: cfg.nexusRawRepo,
-        credentialsId: cfg.nexusCredId,
-        groupId: cfg.groupId ?: 'com.jcloudcodes',
-        version: env.BUILD_NUMBER,
-        artifacts: [[
-            artifactId: cfg.appName,
-            classifier: '',
-            file: artifactFile,
-            type: artifactType
-        ]]
-    )
+    echo "PACKAGED_ARTIFACT=${env.PACKAGED_ARTIFACT}"
 }
